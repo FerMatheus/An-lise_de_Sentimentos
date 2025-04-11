@@ -1,37 +1,65 @@
-import string
+import re
+import unicodedata
 
-palavras_positivas = {"bom", "ótimo", "excelente", "maneiro", "gostei", "massa", "legal"}
-palavras_negativas = {"ruim", "péssimo", "horrível", "te doido é", "chato", "sem condição", "jogar fora"}
+palavras_positivas = {"bom", "otimo", "excelente", "maneiro", "gostei", "massa", "legal", "top", "daora"}
+palavras_negativas = {"ruim", "pessimo", "horrivel", "chato", "sem condicao", "jogar fora", "lixo"}
+indicadores_ironicos = {"só que não", "aham", "sei", "legal né", "tabom", "imagina", "uau", "topzera", "só que ruim"}
+indicadores_construtivos = {"mas", "porém", "contudo", "todavia", "seria melhor", "sugiro", "precisa melhorar", "falta"}
+indicadores_intensivos = {"muito", "demais", "super", "incrivelmente", "extremamente", "totalmente", "pra caramba"}
 
-comentarios = []
-
-quantidade = int(input('Quantos comentários você deseja analisar?'))
+quantidade = int(input("Quantos comentários você deseja analisar? "))
 
 for i in range(quantidade):
-    comentario = input(f'Digite o comentário {i + 1}: ')
-    comentarios.append(comentario)
+    comentario_original = input(f"Digite o comentário {i + 1}: ")
 
-for comentario in comentarios:
+    comentario = re.sub(r'[^\w\s]', '', comentario_original)
+    comentario = unicodedata.normalize('NFD', comentario).encode('ascii', 'ignore').decode('utf-8')
+    comentario = comentario.lower()
+
+    ironico = False
+    for expr in indicadores_ironicos:
+        if expr in comentario:
+            ironico = True
+
+    construtivo = False
+    for expr in indicadores_construtivos:
+        if expr in comentario:
+            construtivo = True
+
+    tem_intensificador = False
+    for expr in indicadores_intensivos:
+        if expr in comentario:
+            tem_intensificador = True
+
+    palavras = comentario.split()
     score = 0
-    palavras = comentario.lower().split()
-    
-    palavras = [palavra.strip(string.punctuation) for palavra in palavras]
 
     for palavra in palavras:
         if palavra in palavras_positivas:
             score += 1
         elif palavra in palavras_negativas:
             score -= 1
-    
-    if score == 1:
-        print(f'{comentario} -> Positivo')
-    elif score >= 2:
-        print(f'{comentario} -> Muito Positivo')
+
+    # Aplica intensificação depois da contagem
+    if tem_intensificador:
+        score *= 2
+
+    # Inverte se for irônico
+    if ironico:
+        score *= -1
+
+    if score >= 2:
+        classificacao = "Muito Positivo"
+    elif score == 1:
+        classificacao = "Positivo"
+    elif score == 0:
+        classificacao = "Neutro"
     elif score == -1:
-        print(f'{comentario} -> Negativo')
-    elif score <= -2:
-        print(f'{comentario} -> Muito Negativo')
+        classificacao = "Negativo"
     else:
-        print(f'{comentario} -> Neutro')
+        classificacao = "Muito Negativo"
 
+    if construtivo and classificacao != "Neutro":
+        classificacao += " (Construtivo)"
 
+    print(f"{comentario_original} => {classificacao} (Score: {score})")
