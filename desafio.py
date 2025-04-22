@@ -2,7 +2,7 @@ import re
 import unicodedata
 
 positivas = {
-    "bom", "otimo", "excelente", "maneiro", "gostei", "massa", "legal", "top", "daora", "agradavel", "simples", "direto"
+    "bom", "otimo", "excelente", "maneiro", "gostei", "massa", "legal", "top", "daora", "agradavel", "simples", "direto", "melhor"
 }
 negativas = {
     "ruim", "pessimo", "horrivel", "chato", "lixo", "jogar-fora", "sem-condicao", "negativamente"
@@ -17,7 +17,6 @@ construtivos = {
     "mas", "porem", "contudo", "todavia", "seria-melhor", "sugiro", "precisa-melhorar", "falta"
 }
 
-# --- Substituições para expressões compostas ---
 substituicoes = {
     "pra caramba": "pra-caramba",
     "só que não": "so-que-nao",
@@ -29,18 +28,18 @@ substituicoes = {
     "sem condição": "sem-condicao"
 }
 
-# --- Função de pré-processamento ---
 def preprocessar(texto):
     texto = texto.lower()
-    texto = unicodedata.normalize('NFD', texto).encode('ascii', 'ignore').decode('utf-8')
-    texto = re.sub(r'[^\w\s]', '', texto)
 
     for original, substituto in substituicoes.items():
         texto = texto.replace(original, substituto)
 
+    texto = unicodedata.normalize('NFD', texto).encode('ascii', 'ignore').decode('utf-8')
+
+    texto = re.sub(r'[^\w\s-]', '', texto)  
+
     return texto
 
-# --- Função de análise de sentimentos ---
 def analisar_sentimento(comentario_original):
     comentario = preprocessar(comentario_original)
     palavras = comentario.split()
@@ -49,11 +48,9 @@ def analisar_sentimento(comentario_original):
     distancia_max = 2
     indices_intensificadores = [i for i, p in enumerate(palavras) if p in intensificadores]
 
-    # Detectar ironia
     if any(p in palavras for p in ironicos):
         return "Irônico"
 
-    # Detectar crítica construtiva
     if any(p in palavras for p in construtivos):
         return "Crítica Construtiva"
 
@@ -64,9 +61,8 @@ def analisar_sentimento(comentario_original):
             score += 2 if intensificador_perto else 1
         elif palavra in negativas:
             intensificador_perto = any(abs(i - j) <= distancia_max for j in indices_intensificadores)
-            score -= 3 if intensificador_perto else 1
+            score -= 2 if intensificador_perto else 1
 
-    # Classificação baseada no score
     if score >= 3:
         return f"Muito Positivo (Score: {score})"
     elif score == 2:
@@ -82,45 +78,49 @@ def analisar_sentimento(comentario_original):
     else:
         return f"Muito Negativo (Score: {score})"
 
-# --- Execução ---
-quantidade = int(input("Quantos comentários deseja analisar? "))
+# --- Execução com validações ---
+quantidade = input("Quantos comentários deseja analisar? ").strip()
 
-for i in range(quantidade):
-    comentario = input(f"\nComentário {i + 1}: ")
+while quantidade == "" or not quantidade.isdigit():
+    if quantidade == "":
+        print("Você não digitou nada. Tente novamente.")
+    else:
+        print("Entrada inválida. Digite apenas números.")
+    quantidade = input("Digite apenas números: ").strip()
+
+n = int(quantidade)
+
+for i in range(n):
+    comentario = ""
+    while comentario == "":
+        comentario = input(f"\nComentário {i + 1}: ").strip()
+        if comentario == "":
+            print("Você não digitou nada. Por favor, digite um comentário válido.")
+    
     resultado = analisar_sentimento(comentario)
     print(f"Resultado: {resultado}")
+
 
 # Lista de exemplos de comentarios:
 """
 
 Achei super legal, ficou muito melhor do que eu esperava!
-(Positiva)
 
 Sinceramente, isso ficou horrível pra caramba, não tem condição.
-(Muito Negativa)
 
 Seria melhor revisar essa parte antes de publicar, tem alguns pontos confusos.
-(Crítica construtiva)
 
 Uau, que projeto incrível... só que não.
-(Irônica)
 
 Gostei bastante, tá muito bom mesmo.
-(Positiva simples)
 
 Esse resultado ficou ruim e meio chato de acompanhar.
-(Negativa simples)
 
 Ficou ótimo, mas falta um pouco mais de clareza nos detalhes.
-(Construtiva com tom positivo)
 
 Tabom... jogar-fora, talvez seja o melhor destino mesmo.
-(Irônica e negativa)
 
 Li o conteúdo todo, analisei bem, e ainda estou refletindo sobre ele.
-(Neutra (sem palavras-chave claras))
 
 Muito bom, excelente trabalho, direto ao ponto e super agradável de ver.
-(Positiva com várias palavras boas)
-
 """
