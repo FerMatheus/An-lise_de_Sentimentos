@@ -11,11 +11,12 @@ intensificadores = {
     "muito", "demais", "super", "incrivelmente", "extremamente", "totalmente", "pra-caramba", "total"
 }
 ironicos = {
-    "so-que-nao", "aham", "sei", "legal-ne", "tabom", "imagina", "uau", "topzera", "so-que-ruim"
+    "so-que-nao", "aham", "legal-ne", "ta-bom", "imagina", "topzera", "so-que-ruim", "que-incrivel", "arrasou"
 }
 construtivos = {
-    "mas", "porem", "contudo", "todavia", "seria-melhor", "sugiro", "precisa-melhorar", "falta"
+    "seria-melhor", "sugiro", "precisa-melhorar", "falta", "poderia", "recomendo", "aconselho", "corrigir",
 }
+
 
 substituicoes = {
     "pra caramba": "pra-caramba",
@@ -25,8 +26,10 @@ substituicoes = {
     "seria melhor": "seria-melhor",
     "precisa melhorar": "precisa-melhorar",
     "jogar fora": "jogar-fora",
-    "sem condição": "sem-condicao"
+    "sem condição": "sem-condicao",
+    "ta bom": "ta-bom"
 }
+
 
 def preprocessar(texto):
     texto = texto.lower()
@@ -34,11 +37,13 @@ def preprocessar(texto):
     for original, substituto in substituicoes.items():
         texto = texto.replace(original, substituto)
 
-    texto = unicodedata.normalize('NFD', texto).encode('ascii', 'ignore').decode('utf-8')
+    texto = unicodedata.normalize('NFD', texto).encode(
+        'ascii', 'ignore').decode('utf-8')
 
-    texto = re.sub(r'[^\w\s-]', '', texto)  
+    texto = re.sub(r'[^\w\s-]', '', texto)
 
     return texto
+
 
 def analisar_sentimento(comentario_original):
     comentario = preprocessar(comentario_original)
@@ -46,7 +51,8 @@ def analisar_sentimento(comentario_original):
 
     score = 0
     distancia_max = 2
-    indices_intensificadores = [i for i, p in enumerate(palavras) if p in intensificadores]
+    indices_intensificadores = [i for i, p in enumerate(
+        palavras) if p in intensificadores]
 
     if any(p in palavras for p in ironicos):
         return "Irônico"
@@ -57,10 +63,12 @@ def analisar_sentimento(comentario_original):
     # Calcular score
     for i, palavra in enumerate(palavras):
         if palavra in positivas:
-            intensificador_perto = any(abs(i - j) <= distancia_max for j in indices_intensificadores)
+            intensificador_perto = any(
+                abs(i - j) <= distancia_max for j in indices_intensificadores)
             score += 2 if intensificador_perto else 1
         elif palavra in negativas:
-            intensificador_perto = any(abs(i - j) <= distancia_max for j in indices_intensificadores)
+            intensificador_perto = any(
+                abs(i - j) <= distancia_max for j in indices_intensificadores)
             score -= 2 if intensificador_perto else 1
 
     if score >= 3:
@@ -77,6 +85,7 @@ def analisar_sentimento(comentario_original):
         return f"Negativo (Score: {score})"
     else:
         return f"Muito Negativo (Score: {score})"
+
 
 # --- Execução com validações ---
 quantidade = input("Quantos comentários deseja analisar? ").strip()
@@ -96,7 +105,7 @@ for i in range(n):
         comentario = input(f"\nComentário {i + 1}: ").strip()
         if comentario == "":
             print("Você não digitou nada. Por favor, digite um comentário válido.")
-    
+
     resultado = analisar_sentimento(comentario)
     print(f"Resultado: {resultado}")
 
